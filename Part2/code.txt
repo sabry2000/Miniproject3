@@ -1,304 +1,300 @@
-/* C++ program to simulate a simple UNIX-like file system */
-
-/* No output can be captured because the disk creation mechanism pertaining to
-
- create_fs disk0
-has not been provided. However, the create, delete, read, write and ls operations and the main have been implemented assuming that the disk is available and that the input file to the main is error-free.
-
-*/
-
 #include <iostream>
 #include <fstream>
-using namespace std ;
+using namespace std;
 
 typedef int int32; // 4-byte int
 typedef char byte; // alias char as byte
 
+class myFileSystem{
+  //data structures
 
-class FileSystem
-{
-public:
-   void LoadDisk();
-   void DumpData();
-   bool Create(const char *name, int32 size);
-   bool Delete(const char *name);
-   void ReadBlock(int32 blockPtr, char *buf);
-   void WriteBlock(int32 blockPtr, const char *buf);
-   bool Read(const char *name, int32 blockNum, char *buf);
-   bool Write(const char *name, int32 blockNum, const char *buf);
-   void ls();
+  //This is the super block class, i.e. the first 1KB block
+  private class SuperBlock{
 
-   /* the file system is named disk0 */
-   string DISK_NAME;
+    //Inode block : total size = 48 bytes
+    class Inode{
+      char name[8];            // file name
+      int32 size;               // file size (in number of blocks)
+      int32 blockPointers[8]; // direct block pointers
+      int32 used;               // 0 => inode is free; 1 => in use  
+
+      byte data[48];
+
+      //initialize the index node
+      void initialize(){
+        for(int i<0; i<8; i++){
+          name[i] = data[i]
+        }
+        for(int i=8; i<12; i++){
+
+        }
+        for(int i = 12; i<44; i++){
+
+        }
+        for(int i =44; i<48; i++){
+
+        }
+      }
+    };
+
+    byte free_block_list[128];    //if the i-th byte is 0, it indicates that the block is free, else it is in use
+    Inode inodes[16];             //16 index nodes
+
+    //method to intialize the superblock
+    public SuperBlock(byte firstKB[1000]){
+
+      int i,j,k;
+      //initialize free block list
+      for(i = 0; i<128; i++){
+        free_block_list[i] = firstKB[i]
+      }
+      //partition 768 bytes to 16 groups of 48 bytes
+      for(j=0;j<16;j++){
+        for (k=0; k<48; k++){
+          inodes[j].data[k] = firstKB[i + (j * k)]
+        }
+      }
+      //initialize the 16 index nodes
+      for(j=0; j<16;j++){
+        inodes[j].initialize()
+      }
+    }
+  };
+  string DISK_NAME;            //the file system is named disk0
+  SuperBlock *sb;
+
+  public myFileSystem(string diskName){
+    DISK_NAME = diskName;
+    // Read the first 1KB and parse it to structs/objecs representing the super block
+    // 	An easy way to work with the 1KB memory chunk is to move a pointer to a
+    //	position where a struct/object begins. You can use the sizeof operator to help
+    //	cleanly determine the position. Next, cast the pointer to a pointer of the
+    //	struct/object type.
+
+    byte buffer[1000];
+    ifstream diskreader(DISK_NAME);
+    diskreader.seekg(0, ios.end());
+    size_t length = diskreader.tellg();
+    diskreader.seekg(0, ios::beg());
+
+    if (length > sizeof(buffer)){
+      length = sizeof(buffer);
+    }
+
+    diskreader.read(buffer, length);
+
+    SuperBlock temp(buffer);                //initalize the superblock
+    sb=&temp;
+
+    // Be sure to close the file in a destructor or otherwise before
+    // the process exits.
+    }
+
+  public int create(char name[8], int32 size)
+    { //create a file with this name and this size
+
+      // high level pseudo code for creating a new file
+
+      // Step 1: Look for a free inode by searching the collection of objects
+      // representing inodes within the super block object.
+      // If none exist, then return an error.
+      // Also make sure that no other file in use with the same name exists.
+
+      // Step 2: Look for a number of free blocks equal to the size variable
+      // passed to this method. If not enough free blocks exist, then return an error.
+
+      // Step 3: Now we know we have an inode and free blocks necessary to
+      // create the file. So mark the inode and blocks as used and update the rest of
+      // the information in the inode.
+
+      // Step 4: Write the entire super block back to disk.
+      //	An easy way to do this is to seek to the beginning of the disk
+      //	and write the 1KB memory chunk.
+    } // End Create
+
+  public int delete (char name[8]){
+      // Delete the file with this name
+      string filename(name);
+
+      // Step 1: Look for an inode that is in use with given name
+      // by searching the collection of objects
+      // representing inodes within the super block object.
+      // If it does not exist, then return an error.
+
+      // Step 2: Free blocks of the file being deleted by updating
+      // the object representing the free block list in the super block object.
+
+      // Step 3: Mark inode as free.
+
+      // Step 4: Write the entire super block back to disk.
+
+    } // End Delete
+
+  public int ls(void){
+    // List names of all files on disk
+    // Step 1: Print the name and size fields of all used inodes.
+    for (int i = 0; i < 16; i++)
+    {
+      if (sb.inodes[i].used == 1)
+        cout << sb.inodes[i].name << endl;
+    }
+
+  } // End ls
+
+  public int read(char name[8], int32 blockNum, char buf[1024]){
+    // Return an error if and when appropriate. For instance, make sure
+    // blockNum does not exceed size-1.
+    if(blockNum < 0 || blockNum > 7){
+      cout << "Wrong block number\n";
+      exit(1);
+    }
+    string filename(name);
+    // Step 1: Locate the inode for this file as in Step 1 of delete.
+    for(int i=0;i<16; i++){
+      if(filename == sb.inodes[i].name){
+        if(sb.inodes[i].size < blockNum + 1){
+          cout << "Wrong block number\n";
+          exit(1);
+        }
+        // read this block from this file
+        // Step 2: Seek to blockPointers[blockNum] and read the block
+        // from disk to buf.         
+        ReadBlock(sb.inodes[i].blockPointers[blockNum], buf);          
+        return 1;
+      }
+    }     
+    cout << filename << " : File not found\n";
+    exit(1);
+
+  } // End read
+
+  public int write(char name[8], int32 blockNum, char buf[1024]){
+    // write this block to this file
+    // Return an error if and when appropriate.
+    if(blockNum < 0 || blockNum > 7){
+      cout << "Wrong block number\n";
+      exit(1);
+    }
+    // Step 1: Locate the inode for this file as in Step 1 of delete.
+    string filename(name);
+    for(int i=0; i<16; i++){
+      if(filename == sb.inodes[i].name){
+        if(sb.inodes[i].size < blockNum + 1){
+          cout << "Wrong block number\n";
+          exit(1);
+        }
+        // Step 2: Seek to blockPointers[blockNum] and write buf to disk.
+        writeBlock(sb.inodes[i].blockPointers[blockNum], buf);          
+        return 1;
+      }
+    }
+    cout << filename << " : File not found\n";
+    exit(1);  
+  }// end write
   
-private:
-   /* free-block list */
-   byte free_block[128]; //if the i-th byte is 0, it indicates that the block is free, else it is in use
-
-   /* Inode block : total size = 48 bytes*/
-   struct Inode
-   {
-       string name;            // file name
-       int32 size;               // file size (in number of blocks)
-       int32 blockPointers[8]; // direct block pointers
-       int32 used;               // 0 => inode is free; 1 => in use  
-   };
-
-   Inode inodes[16];
-   void CommitToDisk(int inode);
-   friend ifstream& operator>>(std::ifstream&, FileSystem::Inode&);
-   friend ofstream& operator<<(std::ofstream&, FileSystem::Inode&);
-};
-
-ifstream& operator >> (ifstream& inn, FileSystem::Inode& dest)
-{
-   char name[9];
-   inn.read(name, 8);
-   name[8] = 0;
-   dest.name = string(name);
-   inn >> dest.size;
-   for(int i=0;i<8;i++)
-       inn >> dest.blockPointers[i];
-   inn >> dest.used;
-}
-
-ofstream& operator << (ofstream& onn, FileSystem::Inode& src)
-{
-   onn.write(src.name.c_str(), 8);
-   onn << src.size;
-   for(int i=0;i<8;i++)
-       onn << src.blockPointers[i];
-   onn << src.used;
-}
-
-void FileSystem::LoadDisk()
-{
-   ifstream diskReader(DISK_NAME);
+  // public methods that are used when initializing and terminating the program
   
-   // read free-block list
-   diskReader.read(free_block, 128);  
-   // read inodes
-   for(int i = 0; i < 16; i++)
-       diskReader >> inodes[i];
-  
-   diskReader.close();
-}
+  //intitialize the filesystem
+  public void initialize(){
+    ifstream diskReader(DISK_NAME);
 
-void FileSystem::DumpData()
-{
+    // read free-block list
+    diskReader.read(sb.free_block, 128);  
+    // read inodes
+    for(int i = 0; i < 16; i++)
+      diskReader >> sb.inodes[i];
+
+    diskReader.close();
+  }
+  
+  //terminate using the filesystem
+  public void terminate(){
    ofstream diskWriter(DISK_NAME);
   
    // write free-block list
-   diskWriter.write(free_block, 128);
+   diskWriter.write(sb.free_block, 128);
    // write inodes
    for(int i = 0; i < 16; i++)
-       diskWriter << inodes[i];
+      diskWriter << sb.inodes[i];
   
    diskWriter.close();
-}
+  }
 
-bool FileSystem::Create(const char *name, int32 size)
-/*create a new file with this name and with these many blocks. (We shall assume that the file size is specified at file creation time and the file does not grow or shrink from this point on) */
-{
-   if(size < 1 || size > 8)
-   {
-       cout << "Invalid block size specified!\n";
-       return false;
-   }
+  //private methods used internally
   
-   string filename(name);
-   int chosenInode = 16;
-   for(int i=0;i<16; i++)
-       if(inodes[i].used == 1 && filename == inodes[i].name)
-       {
-           cout << "A file by name " << filename << " already exists!\n";
-           return false;
-       }
-       else if (inodes[i].used == 0)
-       {
-           chosenInode = i;
-           break;
-       }
-      
-   if(chosenInode == 16)
-   {
-       cout << "No space left on disk!\n";
-       return false;
-   }
-   inodes[chosenInode].name = filename;
-   inodes[chosenInode].size = size;
-   inodes[chosenInode].used = 1;
-   for(int i = 0; i < size; i++)
-       inodes[chosenInode].blockPointers[i] = (chosenInode+1)*1024 + i*127;
-   CommitToDisk(chosenInode);
-   return true;
-}
+  //private method to commit to the disk
+  private void commitToDisk(int inode){
+    ofstream diskWriter (DISK_NAME , ofstream::binary | ofstream::app);
+    diskWriter.seekp(128 + 48*(inode));
+    diskWriter << sb.inodes[inode];
+    diskWriter.close();
+  }
 
-bool FileSystem::Delete(const char *name)
-/* delete the file with this name */
-{
-   string filename(name);
-   for(int i=0;i<16; i++)
-       if(filename == inodes[i].name)
-       {
-           cout << "Deleting file : " << filename << endl;
-           inodes[i].used = 0;
-           CommitToDisk(i);
-           return true;
-       }
-      
-   cout << filename << " : File not found\n";
-   return false;
-}
+  //helper method to read a block
+  private void readBlock(int32 blockPtr, char *buf){
+  ifstream diskReader(DISK_NAME, ifstream::binary);
+  diskReader.seekg(blockPtr, diskReader.beg);
+  diskReader.read(buf, 1024);
+  diskReader.close();          
+  }
 
-void FileSystem::CommitToDisk(int inode)
-{
-ofstream diskWriter (DISK_NAME , ofstream::binary | ofstream::app);
-   diskWriter.seekp(128 + 48*(inode));
-   diskWriter << inodes[inode];
-   diskWriter.close();
-}
+  //helper method to write a block
+  private void writeBlock(int32 blockPtr, const char *buf){
+    ofstream diskWriter(DISK_NAME, ofstream::binary | ofstream::app);
+    diskWriter.seekp(blockPtr, diskWriter.beg);
+    diskWriter.write(buf, 1024);
+    diskWriter.close();
+  }
 
-void FileSystem::ReadBlock(int32 blockPtr, char *buf)
-{
-   ifstream diskReader(DISK_NAME, ifstream::binary);
-   diskReader.seekg(blockPtr, diskReader.beg);
-   diskReader.read(buf, 1024);
-   diskReader.close();          
-}
+};
 
-void FileSystem::WriteBlock(int32 blockPtr, const char *buf)
-{
-   ofstream diskWriter(DISK_NAME, ofstream::binary | ofstream::app);
-   diskWriter.seekp(blockPtr, diskWriter.beg);
-   diskWriter.write(buf, 1024);
-   diskWriter.close();          
-}
+int main(int argc, char* argv[]){
+  if (argc < 2){
+    cout << "Program expect an input file as its argument" << endl;
+    return 1;
+  }
 
-bool FileSystem::Read(const char* name, int32 blockNum, char *buf)
-/* read the specified block from this file into the specified buffer; blockNum can range from 0 to 7. */
-{
-   if(blockNum < 0 || blockNum > 7)
-   {
-       cout << "Invalid block number specified!\n";
-       return false;
-   }
-   string filename(name);
-   for(int i=0;i<16; i++)
-       if(filename == inodes[i].name)
-       {
-           if(inodes[i].size < blockNum + 1)
-           {
-               cout << "Invalid block number specified!\n";
-               return false;
-           }
-           cout << "Copying block# " << blockNum << " from " << filename << " from disk " << endl;          
-           ReadBlock(inodes[i].blockPointers[blockNum], buf);          
-           return true;
-       }
-      
-   cout << filename << " : File not found\n";
-   return false;
-}
-
-bool FileSystem::Write(const char *name, int32 blockNum, const char *buf)
-/* write the data in the buffer to the specified block in this file. */
-{
-   if(blockNum < 0 || blockNum > 7)
-   {
-       cout << "Invalid block number specified!\n";
-       return false;
-   }
-   string filename(name);
-   for(int i=0; i<16; i++)
-       if(filename == inodes[i].name)
-       {
-           if(inodes[i].size < blockNum + 1)
-           {
-               cout << "Invalid block number specified!\n";
-               return false;
-           }
-           cout << "Writing block# " << blockNum << " from " << filename << " to disk " << endl;          
-           WriteBlock(inodes[i].blockPointers[blockNum], buf);          
-           return true;
-       }
-      
-   cout << filename << " : File not found\n";
-   return false;  
-}
-
-
-void FileSystem::ls()
-/* list the names of all files in the file system and their sizes. */
-{
-   cout << "Listing all files in the file system!" << endl;
-   for (int i = 0; i < 16; i++)
-   {
-       if (inodes[i].used == 1)
-           cout << inodes[i].name << endl;
-   }
-}
-
-
-int main(int argc, char* argv[])
-{
-   if (argc < 2)
-   {
-       cout << "Syntax : " << argv[0] <<" <input file>" << endl;
-       return 1;
-   }
+  string filename = argv[1];
+  ifstream filereader(filename);                                              //start reading the file
   
-   ifstream input(argv[1]);
-   if (!input.is_open())
-   {
-       cout << argv[1] << " : file not found " << endl;
-       return 1;
-   }
+  if (!filereader.is_open()){
+    cout << filename << " : file not found " << endl;
+    return 1;
+  }
+
+  string diskname;
+  filereader >> diskname;
+  myFileSystem filesystem(diskname);                                   //create a filesystem with the following diskname
+
+  filesystem.initialize()
+
+  //possible arguments from input file
+  string command;
+  string filename;
+  int blockNum;
+  char buf[1024];
   
-   FileSystem unix;
-   input >> unix.DISK_NAME;
+  cout << "Beginning operations on file system " << endl;
+  while(! filereader.eof()){
+    //read the first string, i.e. command
+    filereader >> command;
   
-   unix.LoadDisk();
+    if(command == "L"){filesystem.ls();continue;}
+    
+    //if it is not L, then there is another argument
+    filereader >> filename;
   
-   string cmd;
-   string filename;
-   int blockNum;
-   char buf[1024];
+    if(command == "D"){filesystem.delete(filename.c_str());continue;}
   
-   while(! input.eof())
-   {
-       input >> cmd;
-      
-       if(cmd == "L")
-       {
-           unix.ls();
-           continue;
-       }
-      
-       input >> filename ;
-      
-       if(cmd == "D")
-       {
-           unix.Delete(filename.c_str());
-           continue;
-       }
-      
-       input >> blockNum;
-      
-       if(cmd == "C")
-       {
-           unix.Create(filename.c_str(), blockNum);
-       }
-       else if(cmd == "W")
-       {
-           unix.Write(filename.c_str(), blockNum, buf);
-       }
-       else if(cmd == "R")
-       {
-           unix.Read(filename.c_str(), blockNum, buf);
-       }
-   }
-   input.close();
-   unix.DumpData();
-   return 0;
+    //if it is not D, then there is another argument
+    filereader >> blockNum;
+  
+    if(command == "C"){filesystem.create(filename.c_str(), blockNum);}
+    else if(command == "W"){filesystem.write(filename.c_str(), blockNum, buf);}
+    else if(command == "R"){filesystem.read(filename.c_str(), blockNum, buf);}
+  }
+  cout << "Completed operations on file system " << endl;
+  filereader.close();
+  filesystem.terminate();
+  return 0;
 }
