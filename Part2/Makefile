@@ -1,6 +1,8 @@
 all: compile run clean
 
 compile:
+	g++ create_fs.c create_fs 
 	g++ code.cpp -o code.
 run:
-	./code disk0
+	./create_fs disk0
+	./code input.txt
