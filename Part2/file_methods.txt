@@ -1,0 +1,69 @@
+#include <stdio.h>
+#include <stdbool.h>
+#include <unistd.h>
+
+typedef int int32;
+
+void Create(char name[8], int32 size);
+void Delete(char name[8]);
+char *Read(char name[8], int32 blockNum, char buf[1024]);
+void Write(char name[8], int32 blockNum, char buf[1024]);
+
+int main()
+{
+    printf("Hello World");
+    return 0;
+}
+void Create(char name[8], int32 size){
+    //ensure file is of correct size
+    if(size>8 || size<1){
+        printf("Invalid block size specified");
+    } else {
+        FILE *fp = fopen(name,"w");
+        fseek(fp, size , SEEK_SET);
+        fclose(fp);
+    }
+}
+void Delete(char name[8]){
+    //check if file exists
+    if( access( name, F_OK ) != -1 ) {
+        if(remove(name)==0){
+            //message printed if operation is successful
+            printf("File successfully removed");
+        } else {
+            printf("Unable to remove file");
+        }
+    } else {
+        printf("File does not exist");
+    }
+}
+char *Read(char name[8], int32 blockNum, char buf[1024]){
+    if (blockNum>7||blockNum<0){
+        printf("Invalid block number specified");
+    } else if( access( name, F_OK ) == -1 ) {
+        printf("File does not exist");
+    } else {
+        FILE *fp = fopen(name,"r");
+        fseek(fp, 0, SEEK_END);
+        long size = ftell(fp);
+        fseek(fp, 0, SEEK_SET);
+        fread(buf, 1, size, fp);
+        fclose(fp);
+        return buf;
+    }
+}
+void Write(char name[8], int32 blockNum, char buf[1024]){
+    if( access( name, F_OK ) == -1 ) {
+        printf("File does not exist");
+    } else {
+        FILE *fp = fopen(name,"w");
+        int value = fputs(buf, fp);
+        //check for whether operation was successful or not
+        if (value == EOF) {
+            printf("Was not able to write into file");
+        } else {
+            printf("Buffer was added to file");
+        }
+        fclose(file);
+    }
+}
